@@ -1,0 +1,4 @@
+ModernIDLE.code-workspace
+__pycache__/
+.vscode/
+demo.py
