@@ -3,6 +3,8 @@ from tkinter.filedialog import askopenfilename, asksaveasfilename
 import sys
 import idlelib.colorizer as idc
 import idlelib.percolator as idp
+import os
+os.chdir(os.path.dirname(__file__))
 
 from tinui import BasicTinUI, ExpandPanel, VerticalPanel, HorizonPanel, show_question
 from tinui.theme.tinuilight import TinUILight
@@ -97,6 +99,7 @@ def change_title(name):
 root = Tk()
 root.title("ModernIDLE")
 root.geometry("700x700")
+root.iconbitmap('logo.ico')
 
 ui = BasicTinUI(root)
 ui.pack(fill="both", expand=True)
