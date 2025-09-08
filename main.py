@@ -60,6 +60,7 @@ def open_file(event):
         with open(filename, 'r', encoding='utf-8') as f:
             textbox.delete('1.0', 'end')
             textbox.insert('1.0', f.read())
+            textbox.mark_set('insert', '1.0')
         textbox.edit_reset()
         change_title(filename)
         saved = True
@@ -73,6 +74,11 @@ def run_script_callback(event):
     if filename:
         run_script(filename)
 
+def get_insert_index(event):
+    index = textbox.index('insert')
+    line, col = index.split('.')
+    col = int(col)+1
+    ui.itemconfig(locp, text=f'Line: {line}, Column: {col}')
 
 def root_quit():
     if not saved:
@@ -113,6 +119,8 @@ barbutton = uitheme.add_barbutton((0,0), content=(
     ('','\uE8A4',lambda e: tool.toggle_comment(textbox)),
     ('','\uE8E4',lambda e: tool.left_move(textbox)),
     ('','\uE8E2',lambda e: tool.right_move(textbox)),
+    '',
+    ('','\uE71E',tool.search_show),
     ), anchor='w')[-1]
 toolpanel.add_child(barbutton, weight=1)
 accentbutton = uitheme.add_accentbutton((0,0), text='Run', icon='\uE768', anchor='w', command=run_script_callback)[-1]
@@ -122,11 +130,15 @@ textboxs = uitheme.add_textbox((0,0), font='Consolas 12', scrollbar=True)
 textpanel = ExpandPanel(ui, textboxs[-1], (0,3,3,0))
 vpanel.add_child(textpanel, weight=1)
 textbox = textboxs[0]
+ui.textbox = textbox
 textbox.config(wrap='none', undo=True)
 idc.color_config(textbox)
 p = idp.Percolator(textbox)
 d = idc.ColorDelegator()
 p.insertfilter(d)
+
+locp = uitheme.add_paragraph((0,0), font='Consolas 11', text='Line: 1, Column: 1', anchor='w')
+vpanel.add_child(locp)
 
 root.protocol("WM_DELETE_WINDOW", root_quit)
 
@@ -141,6 +153,9 @@ textbox.bind("<Control-y>", lambda e: textbox.edit_redo())
 textbox.bind("<Control-/>", lambda e: tool.toggle_comment(textbox))
 textbox.bind("<Control-[>", lambda e: tool.left_move(textbox))
 textbox.bind("<Control-]>", lambda e: tool.right_move(textbox))
+textbox.bind("<KeyRelease>", get_insert_index)
+textbox.bind("<ButtonRelease-1>", get_insert_index)
+textbox.bind("<Control-f>", tool.search_show)
 
 root.update()
 textbox.focus_set()
@@ -148,11 +163,12 @@ textbox.focus_set()
 if filename:
     with open(filename, 'r', encoding='utf-8') as f:
         textbox.insert('1.0', f.read())
+        textbox.mark_set('insert', '1.0')
     textbox.edit_reset()
     textbox.edit_modified(False)
     change_title(filename)
-textbox.bind("<<Modified>>", modifed_callback)
+textbox.bind("<<Modified>>", modifed_callback, add=True)
 
-tool.init_ui(vpanel, ui)
+tool.init_ui(vpanel, uitheme)
 
 root.mainloop()
