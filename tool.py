@@ -1,3 +1,5 @@
+import re
+
 from tinui import ExpandPanel, HorizonPanel, VerticalPanel
 
 vpanel: VerticalPanel|None = None
@@ -59,8 +61,13 @@ def toggle_regex(e):
 
 def search_show(e=None):
     global search_show_flag
+    selstart = ui.ui.textbox.index('sel.first')
+    selend = ui.ui.textbox.index('sel.last')
+    if selstart:
+        search_entry.delete(0, 'end')
+        search_entry.insert(0, ui.ui.textbox.get(selstart, selend))
     if search_show_flag:
-        search_hide()
+        search_entry.focus_set()
         return
     search_show_flag = True
     vpanel.add_child(search_panel, 35, index=1)
@@ -75,6 +82,17 @@ def search_hide(e=None):
     ui.ui.textbox.focus_set()
     ui.ui.event_generate('<Configure>', width=ui.ui.winfo_width(), height=ui.ui.winfo_height())
 
+def __get_real_pattern_from_re(textbox, pattern, index):
+    if not regex_flag:
+        return pattern
+    line = __get_index_line(index)
+    chars = textbox.get(index, f'{line}.end')
+    flag = 0
+    if not case_flag:
+        flag = re.IGNORECASE
+    res = re.search(pattern, chars, flag)
+    return res.group(0)
+
 def search_next(textbox):
     index = textbox.index('insert') + '+1c'
     pattern = search_entry.get()
@@ -84,8 +102,9 @@ def search_next(textbox):
     if res:
         textbox.tag_remove('sel', '1.0', 'end')
         textbox.mark_set('insert', res)
-        textbox.see('insert')
+        pattern = __get_real_pattern_from_re(textbox, pattern, res)
         textbox.tag_add('sel', res, res + '+%dc' % len(pattern))
+        textbox.see('insert')
     else:
         textbox.bell()
 
@@ -98,8 +117,9 @@ def search_prev(textbox):
     if res:
         textbox.tag_remove('sel', '1.0', 'end')
         textbox.mark_set('insert', res)
-        textbox.see('insert')
+        pattern = __get_real_pattern_from_re(textbox, pattern, res)
         textbox.tag_add('sel', res, res + '+%dc' % len(pattern))
+        textbox.see('insert')
     else:
         textbox.bell()
 
