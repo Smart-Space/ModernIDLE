@@ -9,8 +9,8 @@ def run_script(filename):
     t.start()
 
 def _run_script(filename):
-    print("Running script:", filename)
+    print("===Running script:", filename, '===')
     cmd = [sys.executable, '-u', filename]
     p = subprocess.Popen(cmd)
     p.wait()
-    print("Script finished:", filename)
+    print("===Script finished:", filename, '===\n===exit code: ', p.returncode, '===\n')

@@ -8,6 +8,7 @@ from tinui import BasicTinUI, ExpandPanel, VerticalPanel, HorizonPanel, show_que
 from tinui.theme.tinuilight import TinUILight
 
 from process import run_script
+import tool
 
 filename = sys.argv[1] if len(sys.argv) > 1 else None
 saved = True
@@ -17,7 +18,7 @@ def modifed_callback(event):
     global saved
     if not textbox.edit_modified():
         return
-    if saved:
+    if saved and filename:
         saved = False
         change_title(filename + ' *')
 
@@ -65,10 +66,20 @@ def open_file(event):
         textbox.edit_modified(False)
     return "break"
 
+def toggle_comment(event):
+    tool.toggle_comment(textbox)
+
 def run_script_callback(event):
     if filename:
         run_script(filename)
 
+
+def root_quit():
+    if not saved:
+        q = show_question(root, 'Save changes?', 'Do you want to save changes before quitting?')
+        if q:
+            save_file(None)
+    root.destroy()
 
 def on_resize(event):
     rpanel.update_layout(0, 0, event.width, event.height)
@@ -99,6 +110,9 @@ barbutton = uitheme.add_barbutton((0,0), content=(
     '',
     ('','\uE7A7',lambda e: textbox.edit_undo()),
     ('','\uE7A6',lambda e: textbox.edit_redo()),
+    ('','\uE8A4',lambda e: tool.toggle_comment(textbox)),
+    ('','\uE8E4',lambda e: tool.left_move(textbox)),
+    ('','\uE8E2',lambda e: tool.right_move(textbox)),
     ), anchor='w')[-1]
 toolpanel.add_child(barbutton, weight=1)
 accentbutton = uitheme.add_accentbutton((0,0), text='Run', icon='\uE768', anchor='w', command=run_script_callback)[-1]
@@ -114,14 +128,19 @@ p = idp.Percolator(textbox)
 d = idc.ColorDelegator()
 p.insertfilter(d)
 
+root.protocol("WM_DELETE_WINDOW", root_quit)
+
 ui.bind("<Configure>", on_resize)
 
-textbox.bind("<Control-z>", lambda e: textbox.edit_undo())
-textbox.bind("<Control-y>", lambda e: textbox.edit_redo())
 textbox.bind("<Control-o>", open_file)
 textbox.bind("<Control-s>", save_file)
 textbox.bind("<Control-Shift-S>", save_as_file)
 textbox.bind("<F5>", run_script_callback)
+textbox.bind("<Control-z>", lambda e: textbox.edit_undo())
+textbox.bind("<Control-y>", lambda e: textbox.edit_redo())
+textbox.bind("<Control-/>", lambda e: tool.toggle_comment(textbox))
+textbox.bind("<Control-[>", lambda e: tool.left_move(textbox))
+textbox.bind("<Control-]>", lambda e: tool.right_move(textbox))
 
 root.update()
 textbox.focus_set()
@@ -133,5 +152,7 @@ if filename:
     textbox.edit_modified(False)
     change_title(filename)
 textbox.bind("<<Modified>>", modifed_callback)
+
+tool.init_ui(vpanel, ui)
 
 root.mainloop()
