@@ -8,25 +8,6 @@ from tinui import BasicTinUI, ExpandPanel, VerticalPanel, HorizonPanel
 from tinui.theme.tinuilight import TinUILight
 
 
-class StdoutRedirector:
-    def __init__(self, write_callback):
-        self.write_callback = write_callback
-
-    def write(self, text):
-        self.write_callback(text)
-
-    def flush(self):
-        pass
-
-
-class StdinRedirector:
-    def __init__(self, input_queue):
-        self.input_queue = input_queue
-
-    def readline(self):
-        return self.input_queue.get()
-
-
 class ProcessManager:
 
     def __init__(self, textbox, filename):
