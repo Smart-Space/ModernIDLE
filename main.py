@@ -9,7 +9,7 @@ os.chdir(os.path.dirname(__file__))
 from tinui import BasicTinUI, ExpandPanel, VerticalPanel, HorizonPanel, show_question
 from tinui.theme.tinuilight import TinUILight
 
-from process import run_script
+from process import init_shell_window, show_shell_window
 import tool
 
 filename = sys.argv[1] if len(sys.argv) > 1 else None
@@ -74,7 +74,7 @@ def toggle_comment(event):
 
 def run_script_callback(event):
     if filename:
-        run_script(filename)
+        show_shell_window(filename)
 
 def get_insert_index(event):
     index = textbox.index('insert')
@@ -173,5 +173,6 @@ if filename:
 textbox.bind("<<Modified>>", modifed_callback, add=True)
 
 tool.init_ui(vpanel, uitheme)
+init_shell_window()
 
 root.mainloop()

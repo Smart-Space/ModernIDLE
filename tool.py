@@ -99,14 +99,7 @@ def search_next(textbox):
     if not pattern:
         return
     res = textbox.search(pattern, index, forwards=True, stopindex='end', nocase=not case_flag, regexp=regex_flag)
-    if res:
-        textbox.tag_remove('sel', '1.0', 'end')
-        textbox.mark_set('insert', res)
-        pattern = __get_real_pattern_from_re(textbox, pattern, res)
-        textbox.tag_add('sel', res, res + '+%dc' % len(pattern))
-        textbox.see('insert')
-    else:
-        textbox.bell()
+    show_search_result(textbox, pattern, res)
 
 def search_prev(textbox):
     index = textbox.index('insert')
@@ -114,6 +107,9 @@ def search_prev(textbox):
     if not pattern:
         return
     res = textbox.search(pattern, index, backwards=True, stopindex='1.0', nocase=not case_flag, regexp=regex_flag)
+    show_search_result(textbox, pattern, res)
+
+def show_search_result(textbox, pattern, res):
     if res:
         textbox.tag_remove('sel', '1.0', 'end')
         textbox.mark_set('insert', res)
