@@ -96,7 +96,7 @@ def add_newline(event):
         pass
     elif chars[-1] == ':':
         textbox.insert(f'{line+1}.0', res.group(1) + '    ')
-    elif chars in line_end_chars:
+    elif chars in line_end_chars or chars.startswith('return'):
         textbox.insert(f'{line+1}.0', res.group(1)[:-4])
     else:
         textbox.insert(f'{line+1}.0', res.group(1))
