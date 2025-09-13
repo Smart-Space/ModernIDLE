@@ -154,6 +154,7 @@ barbutton = uitheme.add_barbutton((0,0), content=(
     ('','\uE8E2',lambda e: tool.right_move(textbox)),
     '',
     ('','\uE71E',tool.search_show),
+    ('','\uE8AB',tool.replace_show),
     ), anchor='w')[-1]
 toolpanel.add_child(barbutton, weight=1)
 accentbutton = uitheme.add_accentbutton((0,0), text='Run', icon='\uE768', anchor='w', command=run_script_callback)[-1]
@@ -189,6 +190,7 @@ textbox.bind("<Control-]>", lambda e: tool.right_move(textbox))
 textbox.bind("<KeyRelease>", get_insert_index)
 textbox.bind("<ButtonRelease-1>", get_insert_index)
 textbox.bind("<Control-f>", tool.search_show)
+textbox.bind("<Control-h>", tool.replace_show)
 textbox.bind("<Return>", add_newline)
 textbox.bind("<Tab>", add_tab)
 
