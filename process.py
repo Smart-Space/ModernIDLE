@@ -89,6 +89,13 @@ class ProcessManager:
                 break
         # 进程已结束
         if self.process:
+            try:
+                # 读取剩余的输出
+                buffer += self.process.stdout.read()
+                data = buffer.decode('utf-8')
+                self.write_output(data)
+            except:
+                pass
             return_code = self.process.poll()
             self.write_output(f"\n[Process ended, return code: {return_code}]\n")
     
@@ -168,4 +175,5 @@ def init_shell_window():
 def show_shell_window(filename):
     window.title(f"MIDLE Shell - {filename}")
     window.deiconify()
+    entry.focus_set()
     run_script(filename)

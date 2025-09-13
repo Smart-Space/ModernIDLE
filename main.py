@@ -1,6 +1,7 @@
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 import sys
+import re
 import idlelib.colorizer as idc
 import idlelib.percolator as idp
 import os
@@ -82,6 +83,35 @@ def get_insert_index(event):
     col = int(col)+1
     ui.itemconfig(locp, text=f'Line: {line}, Column: {col}')
 
+line_end_chars = ('pass', 'return', 'break', 'continue', 'raise', 'yield')
+line_pattern = re.compile(r'^(\s{0,})(.*)')
+def add_newline(event):
+    index = textbox.index('insert')
+    line, _ = index.split('.')
+    line = int(line)
+    res = line_pattern.match(textbox.get(f'{line}.0', 'insert'))
+    textbox.insert('insert', '\n')
+    chars = res.group(2)
+    if not chars:
+        pass
+    elif chars[-1] == ':':
+        textbox.insert(f'{line+1}.0', res.group(1) + '    ')
+    elif chars in line_end_chars:
+        textbox.insert(f'{line+1}.0', res.group(1)[:-4])
+    else:
+        textbox.insert(f'{line+1}.0', res.group(1))
+    return "break"
+
+def add_tab(event):
+    index = textbox.index('insert')
+    line, _ = index.split('.')
+    res = line_pattern.match(textbox.get(f'{line}.0', 'insert'))
+    if res.group(2):
+        textbox.insert('insert', '\t')
+    else:
+        textbox.insert('insert', '    ')
+    return "break"
+
 def root_quit():
     if not saved:
         q = show_question(root, 'Save changes?', 'Do you want to save changes before quitting?')
@@ -159,6 +189,8 @@ textbox.bind("<Control-]>", lambda e: tool.right_move(textbox))
 textbox.bind("<KeyRelease>", get_insert_index)
 textbox.bind("<ButtonRelease-1>", get_insert_index)
 textbox.bind("<Control-f>", tool.search_show)
+textbox.bind("<Return>", add_newline)
+textbox.bind("<Tab>", add_tab)
 
 root.update()
 textbox.focus_set()
