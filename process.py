@@ -39,7 +39,7 @@ class ProcessManager:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,# 将标准错误合并到标准输出
-                text=True,
+                text=False,
                 bufsize=0
             )
             # 启动线程来处理输入输出
@@ -75,14 +75,16 @@ class ProcessManager:
 
     def _read_stdout(self):
         """从进程的标准输出读取数据"""
+        buffer = b""
         while self.process and self.process.poll() is None:
             try:
-                # warning: 已知问题，这会导致不换行的输出（输入提示等）无法立刻显示
-                output = self.process.stdout.readline()
-                if output:
-                    self.write_output(output)
-                else:
-                    break
+                buffer += self.process.stdout.read(1024)
+                try:
+                    data = buffer.decode('utf-8')
+                    self.write_output(data)
+                    buffer = b""
+                except:
+                    pass
             except:
                 break
         # 进程已结束
@@ -97,7 +99,7 @@ class ProcessManager:
                 # 从队列获取输入
                 input_data = self.input_queue.get(timeout=0.1)
                 if input_data:
-                    self.process.stdin.write(input_data)
+                    self.process.stdin.write(input_data.encode('utf-8'))
                     self.process.stdin.flush()
             except queue.Empty:
                 continue
