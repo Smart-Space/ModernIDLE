@@ -3,6 +3,8 @@ import sys
 import subprocess
 import queue
 import threading
+import os
+os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 from tinui import BasicTinUI, ExpandPanel, VerticalPanel, HorizonPanel
 from tinui.theme.tinuilight import TinUILight
