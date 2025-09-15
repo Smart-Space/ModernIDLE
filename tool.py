@@ -9,6 +9,7 @@ def init_ui(_vpanel: VerticalPanel, _ui):
     ui = _ui
     search_init()
     replace_init()
+    goto_line_init()
 
 def __get_index_line(index):
     return int(index.split('.')[0])
@@ -183,6 +184,49 @@ def replace_all(textbox):
     textbox.mark_set('insert', '1.0')
     while search_next(textbox):
         replace_edit(textbox)
+
+goto_line_flag = False
+def goto_line_init():
+    """跳转到指定行"""
+    global goto_line_entry, goto_line_entryd, goto_line_panel
+    goto_line_panel = vpanel.children[0][0]
+    entryd = ui.add_entry((0,0), width=100, font=('Consolas', 11), anchor='w')
+    goto_line_entry = entryd[0]
+    goto_line_entryd = entryd[-1]
+    goto_line_entry.bind('<Escape>', goto_line_hide)
+    goto_line_entry.bind('<Return>', lambda e: goto_line(ui.ui.textbox))
+    ui.ui.addtag_withtag('goto_line', goto_line_entryd)
+    ui.ui.moveto('goto_line', 0, -50)
+
+def goto_line_show(e=None):
+    global goto_line_flag
+    if goto_line_flag:
+        goto_line_entry.focus_set()
+        return
+    goto_line_flag = True
+    goto_line_panel.add_child(goto_line_entryd, index=1)
+    goto_line_entry.focus_set()
+    ui.ui.event_generate('<Configure>', width=ui.ui.winfo_width(), height=ui.ui.winfo_height())
+
+def goto_line_hide(e=None):
+    global goto_line_flag
+    goto_line_flag = False
+    goto_line_panel.pop_child(1)
+    ui.ui.moveto('goto_line', 0, -50)
+    ui.ui.event_generate('<Configure>', width=ui.ui.winfo_width(), height=ui.ui.winfo_height())
+
+def goto_line(textbox):
+    chars = goto_line_entry.get()
+    if not chars.isdigit():
+        return
+    line = int(chars)
+    if line < 1:
+        return
+    textbox.mark_set('insert', f'{line}.0')
+    textbox.see('insert')
+    goto_line_entry.delete(0, 'end')
+    goto_line_hide()
+    textbox.focus_set()
 
 def toggle_comment(textbox):
     startline, endline = __get_text_line(textbox)

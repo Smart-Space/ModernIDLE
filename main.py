@@ -155,10 +155,11 @@ barbutton = uitheme.add_barbutton((0,0), content=(
     '',
     ('','\uE71E',tool.search_show),
     ('','\uE8AB',tool.replace_show),
+    ('','\uE751',tool.goto_line_show),
     ), anchor='w')[-1]
-toolpanel.add_child(barbutton, weight=1)
-accentbutton = uitheme.add_accentbutton((0,0), text='Run', icon='\uE768', anchor='w', command=run_script_callback)[-1]
-toolpanel.add_child(accentbutton)
+toolpanel.add_child(barbutton)
+accentbutton = uitheme.add_accentbutton((0,0), text='Run', icon='\uE768', anchor='e', command=run_script_callback)[-1]
+toolpanel.add_child(accentbutton, weight=1)
 
 textboxs = uitheme.add_textbox((0,0), font='Consolas 12', scrollbar=True)
 textpanel = ExpandPanel(ui, textboxs[-1], (0,3,3,0))
@@ -191,6 +192,7 @@ textbox.bind("<KeyRelease>", get_insert_index)
 textbox.bind("<ButtonRelease-1>", get_insert_index)
 textbox.bind("<Control-f>", tool.search_show)
 textbox.bind("<Control-h>", tool.replace_show)
+textbox.bind("<Control-g>", tool.goto_line_show)
 textbox.bind("<Return>", add_newline)
 textbox.bind("<Tab>", add_tab)
 
@@ -208,5 +210,7 @@ textbox.bind("<<Modified>>", modifed_callback, add=True)
 
 tool.init_ui(vpanel, uitheme)
 init_shell_window()
+
+textbox.tag_configure('sel', background='#ADD6FF')
 
 root.mainloop()
