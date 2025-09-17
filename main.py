@@ -211,6 +211,6 @@ textbox.bind("<<Modified>>", modifed_callback, add=True)
 tool.init_ui(vpanel, uitheme)
 init_shell_window()
 
-textbox.tag_configure('sel', background='#ADD6FF')
+textbox.tag_configure('sel', background='#ADD6FF', foreground='')
 
 root.mainloop()

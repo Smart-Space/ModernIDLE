@@ -108,6 +108,7 @@ class ProcessManager:
                 # 从队列获取输入
                 input_data = self.input_queue.get(timeout=0.1)
                 if input_data:
+                    self.write_output(input_data + '\n')
                     self.process.stdin.write(input_data.encode('utf-8'))
                     self.process.stdin.flush()
             except queue.Empty:
@@ -160,14 +161,14 @@ def init_shell_window():
     vpanel.add_child(epanel, weight=1)
 
     hpanel = HorizonPanel(ui, spacing=5, padding=(0,8,0,3))
+    prompt = uitheme.add_paragraph((0,0), text='>>>', font='Consolas 12', anchor='w')
+    hpanel.add_child(prompt)
     entrys = uitheme.add_entry((0,0), width=100, anchor='w')
     entry = entrys[0]
     entry.bind('<Return>', write_input)
     epanel2 = ExpandPanel(ui)
     epanel2.set_child(entrys[-1])
     hpanel.add_child(epanel2, weight=1)
-    button = uitheme.add_button2((0,0), text='Input', anchor='w', command=write_input)[-1]
-    hpanel.add_child(button)
     vpanel.add_child(hpanel, 40)
 
     def on_resize(event):
