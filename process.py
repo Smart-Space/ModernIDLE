@@ -12,12 +12,13 @@ from tinui.theme.tinuilight import TinUILight
 
 class ProcessManager:
 
-    def __init__(self, textbox, filename):
+    def __init__(self, textbox, filename, debug):
         self.process = None
         self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
         self.output_area = textbox
         self.filename = filename
+        self.debug = debug
 
     def _on_input_entered(self, user_input):
         if self.process and self.process.poll() is None:
@@ -35,9 +36,13 @@ class ProcessManager:
     
     def start_process(self):
         """启动子进程"""
+        if not self.debug:
+            cmds = [sys.executable, "-u", self.filename]
+        else:
+            cmds = [sys.executable, "-u", "-m", "pdb", self.filename]
         try:
             self.process = subprocess.Popen(
-                [sys.executable, "-u", self.filename],
+                cmds,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,# 将标准错误合并到标准输出
@@ -130,9 +135,9 @@ def write_input(event):
     process._on_input_entered(entry.get())
     entry.delete(0, 'end')
 
-def run_script(filename):
+def run_script(filename, debug):
     global process
-    process = ProcessManager(textbox, filename)
+    process = ProcessManager(textbox, filename, debug)
     process.start_process()
 
 def init_shell_window():
@@ -175,8 +180,8 @@ def init_shell_window():
         rpanel.update_layout(0, 0, event.width, event.height)
     ui.bind("<Configure>", on_resize)
 
-def show_shell_window(filename):
+def show_shell_window(filename, debug=False):
     window.title(f"MIDLE Shell - {filename}")
     window.deiconify()
     entry.focus_set()
-    run_script(filename)
+    run_script(filename, debug)

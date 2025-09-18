@@ -73,6 +73,10 @@ def open_file(event):
 def toggle_comment(event):
     tool.toggle_comment(textbox)
 
+def debug_callback(event):
+    if filename:
+        show_shell_window(filename, debug=True)
+
 def run_script_callback(event):
     if filename:
         show_shell_window(filename)
@@ -158,8 +162,10 @@ barbutton = uitheme.add_barbutton((0,0), content=(
     ('','\uE751',tool.goto_line_show),
     ), anchor='w')[-1]
 toolpanel.add_child(barbutton)
+debug_button = uitheme.add_button2((0,0), text='Debug', icon='\uEBE8', anchor='e', command=debug_callback)[-1]
+toolpanel.add_child(debug_button, weight=1)
 accentbutton = uitheme.add_accentbutton((0,0), text='Run', icon='\uE768', anchor='e', command=run_script_callback)[-1]
-toolpanel.add_child(accentbutton, weight=1)
+toolpanel.add_child(accentbutton)
 
 textboxs = uitheme.add_textbox((0,0), font='Consolas 12', scrollbar=True)
 textpanel = ExpandPanel(ui, textboxs[-1], (0,3,3,0))
