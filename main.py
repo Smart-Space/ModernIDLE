@@ -79,6 +79,7 @@ def debug_callback(event):
 
 def run_script_callback(event):
     if filename:
+        save_file(None)
         show_shell_window(filename)
 
 def get_insert_index(event):

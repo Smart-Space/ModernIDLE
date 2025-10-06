@@ -122,6 +122,9 @@ class ProcessManager:
                 break
 
 
+process: ProcessManager = None
+
+
 def close_window():
     if process.check_process():
         process.stop_process()
@@ -141,6 +144,8 @@ def write_input(event):
 
 def run_script(filename, debug):
     global process
+    if process and process.check_process():
+        process.stop_process()
     process = ProcessManager(textbox, filename, debug)
     process.start_process()
 
