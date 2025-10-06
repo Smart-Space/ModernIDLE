@@ -125,6 +125,10 @@ class ProcessManager:
 def close_window():
     if process.check_process():
         process.stop_process()
+    textbox.config(state='normal')
+    textbox.delete('1.0', 'end')
+    textbox.config(state='disabled')
+    entry.delete(0, 'end')
     window.withdraw()
 
 def close_process(event):
