@@ -121,10 +121,10 @@ def add_newline(event):
     textbox.insert("insert", "\n")
     chars = res.group(2)
     if not chars:
-        pass
+        textbox.insert(f"{line + 1}.0", res.group(1))
     elif chars[-1] == ":":
         textbox.insert(f"{line + 1}.0", res.group(1) + "    ")
-    elif chars in line_end_chars or chars.startswith("return"):
+    elif chars in line_end_chars or chars.startswith("return") or chars.startswith('yield') or chars.startswith('raise'):
         textbox.insert(f"{line + 1}.0", res.group(1)[:-4])
     else:
         textbox.insert(f"{line + 1}.0", res.group(1))
