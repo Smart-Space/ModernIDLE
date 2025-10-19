@@ -26,14 +26,17 @@ class ProcessManager:
             self.input_queue.put(user_input + '\n')
         else:
             self.write_output("There is no process running.\n")
-    
-    def write_output(self, text):
+
+    def write_output(self, text, error:bool=False):
         """在输出区域显示文本"""
         self.output_area.configure(state='normal')
-        self.output_area.insert('end', text)
+        if not error:
+            self.output_area.insert('end', text)
+        else:
+            self.output_area.insert('end', text, 'ERROR')
         self.output_area.see('end')
         self.output_area.configure(state='disabled')
-    
+
     def start_process(self):
         """启动子进程"""
         if not self.debug:
@@ -45,7 +48,7 @@ class ProcessManager:
                 cmds,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,# 将标准错误合并到标准输出
+                stderr=subprocess.PIPE,
                 text=False,
                 bufsize=0
             )
@@ -53,13 +56,16 @@ class ProcessManager:
             self.stdout_thread = threading.Thread(target=self._read_stdout)
             self.stdout_thread.daemon = True
             self.stdout_thread.start()
+            self.stderr_thread = threading.Thread(target=self._read_stderr)
+            self.stderr_thread.daemon = True
+            self.stderr_thread.start()
             self.stdin_thread = threading.Thread(target=self._write_stdin)
             self.stdin_thread.daemon = True
             self.stdin_thread.start()
             self.write_output(f"[Process started: {self.filename}]\n\n")
         except Exception as e:
             self.write_output(f"Error starting process: {e}\n")
-    
+
     def stop_process(self):
         """停止子进程"""
         if self.process:
@@ -70,9 +76,9 @@ class ProcessManager:
                 try:
                     self.process.kill()
                 except:
-                    pass            
+                    pass
             self.write_output("[Process stopped]\n")
-    
+
     def check_process(self):
         """检查子进程是否正在运行"""
         if self.process and self.process.poll() is None:
@@ -85,7 +91,8 @@ class ProcessManager:
         buffer = b""
         while self.process and self.process.poll() is None:
             try:
-                buffer += self.process.stdout.read(1024)
+                buffer += self.process.stdout.read(2048)
+                print(buffer)
                 try:
                     data = buffer.decode('utf-8')
                     self.write_output(data)
@@ -105,7 +112,31 @@ class ProcessManager:
                 pass
             return_code = self.process.poll()
             self.write_output(f"\n[Process ended, return code: {return_code}]\n")
-    
+
+    def _read_stderr(self):
+        """从进程的标准错误读取数据"""
+        buffer = b""
+        while self.process and self.process.poll() is None:
+            try:
+                buffer += self.process.stderr.read(2048)
+                try:
+                    data = buffer.decode('utf-8')
+                    self.write_output(data, True)
+                    buffer = b""
+                except:
+                    pass
+            except:
+                break
+        # 进程已结束
+        if self.process:
+            try:
+                # 读取剩余的输出
+                buffer += self.process.stderr.read()
+                data = buffer.decode('utf-8')
+                self.write_output(data)
+            except:
+                pass
+
     def _write_stdin(self):
         """向进程的标准输入写入数据"""
         while self.process and self.process.poll() is None:
@@ -166,12 +197,13 @@ def init_shell_window():
     rpanel = ExpandPanel(ui)
     vpanel = VerticalPanel(ui,spacing=5)
     rpanel.set_child(vpanel)
-    
+
     epanel = ExpandPanel(ui, padding=(0,3,3,0))
     textboxs = uitheme.add_textbox((0,0), font='Consolas 12', scrollbar=True)
     epanel.set_child(textboxs[-1])
     textbox = textboxs[0]
     textbox.config(wrap='none', state='disabled')
+    textbox.tag_config('ERROR', foreground='red')
     vpanel.add_child(epanel, weight=1)
 
     hpanel = HorizonPanel(ui, spacing=5, padding=(0,8,0,3))
