@@ -5,6 +5,7 @@ import re
 import idlelib.colorizer as idc
 import idlelib.percolator as idp
 import os
+from collections import deque
 
 os.chdir(os.path.dirname(__file__))
 
@@ -102,12 +103,39 @@ def run_script_callback(event):
         show_shell_window(filename)
 
 
+last_insert_index = '1.0'
+last_keysym = ''
 def get_insert_index(event):
+    global last_insert_index, last_keysym
     index = textbox.index("insert")
     line, col = index.split(".")
     col = int(col) + 1
     ui.itemconfig(locp, text=f"Line: {line}, Column: {col}")
+    if not(last_keysym.startswith("Alt") and event.keysym in ("Left", "Right")) and last_insert_index.split(".")[0] != line:
+        # 用于记录上一次编辑位置，用于构建编辑位置历史
+        insert_pos.append(last_insert_index)
+        insert_forward_pos.clear()
+        last_insert_index = index
+    else:
+        last_keysym = event.keysym
 
+def move_back(event):
+    if insert_pos:
+        index = insert_pos.pop()
+        now_index = textbox.index("insert")
+        textbox.mark_set("insert", index)
+        textbox.see(index)
+        insert_forward_pos.append(now_index)
+    return "break"
+
+def move_forward(event):
+    if insert_forward_pos:
+        index = insert_forward_pos.pop()
+        now_index = textbox.index("insert")
+        insert_pos.append(now_index)
+        textbox.mark_set("insert", index)
+        textbox.see(index)
+    return "break"
 
 line_end_chars = ("pass", "return", "break", "continue", "raise", "yield")
 line_pattern = re.compile(r"^(\s{0,})(.*)")
@@ -234,13 +262,17 @@ textbox.bind("<Control-y>", lambda _: textbox.edit_redo())
 textbox.bind("<Control-/>", lambda _: tool.toggle_comment(textbox))
 textbox.bind("<Control-[>", lambda _: tool.left_move(textbox))
 textbox.bind("<Control-]>", lambda _: tool.right_move(textbox))
-textbox.bind("<KeyRelease>", get_insert_index)
-textbox.bind("<ButtonRelease-1>", get_insert_index)
+textbox.bind("<Key>", get_insert_index)
+textbox.bind("<Button-1>", get_insert_index)
 textbox.bind("<Control-f>", tool.search_show)
 textbox.bind("<Control-h>", tool.replace_show)
 textbox.bind("<Control-g>", tool.goto_line_show)
 textbox.bind("<Return>", add_newline)
 textbox.bind("<Tab>", add_tab)
+insert_pos = deque(maxlen=20)
+insert_forward_pos = deque(maxlen=20)
+textbox.bind("<Alt-Left>", move_back)
+textbox.bind("<Alt-Right>", move_forward)
 
 root.update()
 textbox.focus_set()
