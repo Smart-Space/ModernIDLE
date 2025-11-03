@@ -18,6 +18,7 @@ class ProcessManager:
         self.output_queue = queue.Queue()
         self.output_area = textbox
         self.filename = filename
+        self.cwd = os.path.dirname(filename)
         self.debug = debug
 
     def _on_input_entered(self, user_input):
@@ -50,7 +51,8 @@ class ProcessManager:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=False,
-                bufsize=0
+                bufsize=0,
+                cwd=self.cwd
             )
             # 启动线程来处理输入输出
             self.stdout_thread = threading.Thread(target=self._read_stdout)
