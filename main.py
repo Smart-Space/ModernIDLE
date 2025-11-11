@@ -98,7 +98,7 @@ def debug_callback(event):
 
 
 def run_script_callback(event):
-    if filename:
+    if filename and not event.char: # 放置其他情况触发<F5>
         save_file(None)
         show_shell_window(filename)
 

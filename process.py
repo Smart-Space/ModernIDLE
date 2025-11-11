@@ -94,7 +94,6 @@ class ProcessManager:
         while self.process and self.process.poll() is None:
             try:
                 buffer += self.process.stdout.read(2048)
-                print(buffer)
                 try:
                     data = buffer.decode('utf-8')
                     self.write_output(data)
