@@ -97,6 +97,10 @@ def debug_callback(event):
         show_shell_window(filename, debug=True)
 
 
+def __run_script_callback(event):
+    if filename:
+        save_file(None)
+        show_shell_window(filename)
 def run_script_callback(event):
     if filename and not event.char: # 放置其他情况触发<F5>
         save_file(None)
@@ -229,7 +233,7 @@ debug_button = uitheme.add_button2(
 )[-1]
 toolpanel.add_child(debug_button, weight=1)
 accentbutton = uitheme.add_accentbutton(
-    (0, 0), text="Run", icon="\ue768", anchor="e", command=run_script_callback
+    (0, 0), text="Run", icon="\ue768", anchor="e", command=__run_script_callback
 )[-1]
 toolpanel.add_child(accentbutton)
 
