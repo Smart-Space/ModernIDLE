@@ -30,13 +30,15 @@ class ProcessManager:
 
     def write_output(self, text, error:bool=False):
         """在输出区域显示文本"""
-        self.output_area.configure(state='normal')
         if not error:
+            self.output_area.configure(state='normal')
             self.output_area.insert('end', text)
+            self.output_area.configure(state='disabled')
         else:
+            self.output_area.configure(state='normal')
             self.output_area.insert('end', text, 'ERROR')
+            self.output_area.configure(state='disabled')
         self.output_area.see('end')
-        self.output_area.configure(state='disabled')
 
     def start_process(self):
         """启动子进程"""
@@ -112,6 +114,7 @@ class ProcessManager:
             except:
                 pass
             return_code = self.process.poll()
+            print('write it')
             self.write_output(f"\n[Process ended, return code: {return_code}]\n")
 
     def _read_stderr(self):
