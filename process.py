@@ -114,7 +114,6 @@ class ProcessManager:
             except:
                 pass
             return_code = self.process.poll()
-            print('write it')
             self.write_output(f"\n[Process ended, return code: {return_code}]\n")
 
     def _read_stderr(self):
@@ -137,7 +136,7 @@ class ProcessManager:
                 # 读取剩余的输出
                 buffer += self.process.stderr.read()
                 data = buffer.decode('utf-8')
-                self.write_output(data)
+                self.write_output(data, True)
             except:
                 pass
 
