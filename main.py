@@ -1,4 +1,4 @@
-from tkinter import Tk
+from tkinter import Tk, Text
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 import sys
 import re
@@ -109,8 +109,10 @@ def run_script_callback(event):
 
 last_insert_index = '1.0'
 last_keysym = ''
+last_keycode = None
+sep_keycodes = (229, 32, 13)
 def get_insert_index(event):
-    global last_insert_index, last_keysym
+    global last_insert_index, last_keysym, last_keycode
     index = textbox.index("insert")
     line, col = index.split(".")
     col = int(col) + 1
@@ -122,6 +124,10 @@ def get_insert_index(event):
         last_insert_index = index
     else:
         last_keysym = event.keysym
+    # 以下用于手动添加编辑栈
+    if event.keycode in sep_keycodes and event.keycode != last_keycode:
+        event.widget.edit_separator()
+    last_keycode = event.keycode
 
 def move_back(event):
     if insert_pos:
@@ -240,7 +246,8 @@ toolpanel.add_child(accentbutton)
 textboxs = uitheme.add_textbox((0, 0), font="Consolas 12", scrollbar=True)
 textpanel = ExpandPanel(ui, textboxs[-1], (0, 3, 3, 0))
 vpanel.add_child(textpanel, weight=1)
-textbox = textboxs[0]
+textbox:Text = textboxs[0]
+textbox.config(autoseparators=False)
 ui.textbox = textbox
 textbox.config(wrap="none", undo=True)
 idc.color_config(textbox)
