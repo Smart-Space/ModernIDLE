@@ -125,11 +125,11 @@ def get_insert_index(event):
     else:
         last_keysym = event.keysym
     # 以下用于手动添加编辑栈
-    if event.keycode in sep_keycodes and event.keycode != last_keycode:
+    if event.keycode in sep_keycodes or event.keycode != last_keycode:
         event.widget.edit_separator()
     last_keycode = event.keycode
 
-def move_back(event):
+def move_back(_):
     if insert_pos:
         index = insert_pos.pop()
         now_index = textbox.index("insert")
@@ -138,7 +138,7 @@ def move_back(event):
         insert_forward_pos.append(now_index)
     return "break"
 
-def move_forward(event):
+def move_forward(_):
     if insert_forward_pos:
         index = insert_forward_pos.pop()
         now_index = textbox.index("insert")
@@ -151,7 +151,7 @@ line_end_chars = ("pass", "return", "break", "continue", "raise", "yield")
 line_pattern = re.compile(r"^(\s{0,})(.*)")
 
 
-def add_newline(event):
+def add_newline(_):
     index = textbox.index("insert")
     line, _ = index.split(".")
     line = int(line)
@@ -169,7 +169,7 @@ def add_newline(event):
     return "break"
 
 
-def add_tab(event):
+def add_tab(_):
     index = textbox.index("insert")
     line, _ = index.split(".")
     res = line_pattern.match(textbox.get(f"{line}.0", "insert"))
@@ -247,7 +247,6 @@ textboxs = uitheme.add_textbox((0, 0), font="Consolas 12", scrollbar=True)
 textpanel = ExpandPanel(ui, textboxs[-1], (0, 3, 3, 0))
 vpanel.add_child(textpanel, weight=1)
 textbox:Text = textboxs[0]
-textbox.config(autoseparators=False)
 ui.textbox = textbox
 textbox.config(wrap="none", undo=True)
 idc.color_config(textbox)
