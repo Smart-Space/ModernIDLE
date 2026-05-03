@@ -1,25 +1,32 @@
+import sys
+if sys.platform == "win32":
+    import ctypes
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+else:
+    factor = 1
 from tkinter import Tk, Text
 from tkinter.filedialog import askopenfilename, asksaveasfilename
-import sys
 import re
 import idlelib.colorizer as idc
 import idlelib.percolator as idp
 import os
 from collections import deque
 
-os.chdir(os.path.dirname(__file__))
-
+from tinui.TinUIDialog import Dialog
 from tinui import BasicTinUI, ExpandPanel, VerticalPanel, HorizonPanel, show_question
 from tinui.theme.tinuilight import TinUILight
 
 from process import init_shell_window, show_shell_window
 import tool
 
+Dialog.set_scale(factor)
+os.chdir(os.path.dirname(__file__))
 filename = sys.argv[1] if len(sys.argv) > 1 else None
 saved = True
 
 
-def modifed_callback(event):
+def modifed_callback(_):
     global saved
     if not textbox.edit_modified():
         return
@@ -28,9 +35,9 @@ def modifed_callback(event):
         change_title(filename + " *")
 
 
-def save_file(event):
+def save_file(_):
     global saved
-    if saved:
+    if saved or filename is None:
         return
     saved = True
     with open(filename, "w", encoding="utf-8") as f:
@@ -39,7 +46,7 @@ def save_file(event):
     textbox.edit_modified(False)
 
 
-def save_as_file(event):
+def save_as_file(_):
     global filename, saved
     if not saved:
         q = show_question(
@@ -62,7 +69,7 @@ def save_as_file(event):
         textbox.edit_modified(False)
 
 
-def open_file(event):
+def open_file(_):
     global filename, saved
     if not saved:
         q = show_question(
@@ -88,16 +95,16 @@ def open_file(event):
     return "break"
 
 
-def toggle_comment(event):
+def toggle_comment(_):
     tool.toggle_comment(textbox)
 
 
-def debug_callback(event):
+def debug_callback(_):
     if filename:
         show_shell_window(filename, debug=True)
 
 
-def __run_script_callback(event):
+def __run_script_callback(_):
     if filename:
         save_file(None)
         show_shell_window(filename)
@@ -156,6 +163,8 @@ def add_newline(_):
     line, _ = index.split(".")
     line = int(line)
     res = line_pattern.match(textbox.get(f"{line}.0", "insert"))
+    if res is None:
+        return
     textbox.insert("insert", "\n")
     chars = res.group(2)
     if not chars:
@@ -173,6 +182,8 @@ def add_tab(_):
     index = textbox.index("insert")
     line, _ = index.split(".")
     res = line_pattern.match(textbox.get(f"{line}.0", "insert"))
+    if res is None:
+        return
     if res.group(2):
         textbox.insert("insert", "\t")
     else:
@@ -200,10 +211,13 @@ def change_title(name):
 
 root = Tk()
 root.title("ModernIDLE")
-root.geometry("700x700")
+width = int(700*factor)
+height = int(700*factor)
+root.geometry(f"{width}x{height}")
 root.iconbitmap("logo.ico")
 
 ui = BasicTinUI(root)
+ui.set_scale(factor)
 ui.pack(fill="both", expand=True)
 uitheme = TinUILight(ui)
 
@@ -247,7 +261,7 @@ textboxs = uitheme.add_textbox((0, 0), font="Consolas 12", scrollbar=True)
 textpanel = ExpandPanel(ui, textboxs[-1], (0, 3, 3, 0))
 vpanel.add_child(textpanel, weight=1)
 textbox:Text = textboxs[0]
-ui.textbox = textbox
+ui.__setattr__('textbox', textbox)
 textbox.config(wrap="none", undo=True)
 idc.color_config(textbox)
 p = idp.Percolator(textbox)

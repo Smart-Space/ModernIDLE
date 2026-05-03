@@ -1,6 +1,12 @@
 from tkinter import Toplevel
 import sys
+if sys.platform == "win32":
+    import ctypes
+    factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+else:
+    factor = 1
 import subprocess
+import codecs
 import queue
 import threading
 import os
@@ -26,18 +32,16 @@ class ProcessManager:
             # 进程正在运行，发送输入
             self.input_queue.put(user_input + '\n')
         else:
-            self.write_output("There is no process running.\n")
+            self.write_output("There is no process running.\n", 'ERROR')
 
-    def write_output(self, text, error:bool=False):
+    def write_output(self, text, TAG=None):
         """在输出区域显示文本"""
-        if not error:
-            self.output_area.configure(state='normal')
-            self.output_area.insert('end', text)
-            self.output_area.configure(state='disabled')
+        self.output_area.configure(state='normal')
+        if TAG:
+            self.output_area.insert('end', text, TAG)
         else:
-            self.output_area.configure(state='normal')
-            self.output_area.insert('end', text, 'ERROR')
-            self.output_area.configure(state='disabled')
+            self.output_area.insert('end', text)
+        self.output_area.configure(state='disabled')
         self.output_area.see('end')
 
     def start_process(self):
@@ -66,9 +70,9 @@ class ProcessManager:
             self.stdin_thread = threading.Thread(target=self._write_stdin)
             self.stdin_thread.daemon = True
             self.stdin_thread.start()
-            self.write_output(f"[Process started: {self.filename}]\n\n")
+            self.write_output(f"[Process started: {self.filename}]\n\n", 'INFO')
         except Exception as e:
-            self.write_output(f"Error starting process: {e}\n")
+            self.write_output(f"Error starting process: {e}\n", "ERROR")
 
     def stop_process(self):
         """停止子进程"""
@@ -76,12 +80,12 @@ class ProcessManager:
             try:
                 self.process.terminate()
                 self.process.wait(timeout=2)
-            except:
+            except Exception:
                 try:
                     self.process.kill()
-                except:
+                except Exception:
                     pass
-            self.write_output("[Process stopped]\n")
+            self.write_output("[Process stopped]\n", "ERROR")
 
     def check_process(self):
         """检查子进程是否正在运行"""
@@ -90,55 +94,46 @@ class ProcessManager:
         else:
             return False
 
+    def _read_stream(self, stream, flag=None):
+        """从进程的输出流读取数据"""
+        decoder = codecs.getincrementaldecoder('utf-8')()
+        while self.process:
+            try:
+                chunk = stream.read(2048)
+            except Exception:
+                break
+            if not chunk:
+                break
+            try:
+                data = decoder.decode(chunk)
+            except Exception:
+                data = ""
+            if data:
+                self.write_output(data, flag)
+        try:
+            tail = decoder.decode(b"", final=True)
+        except Exception:
+            tail = ""
+        if tail:
+            self.write_output(tail, flag)
+
     def _read_stdout(self):
         """从进程的标准输出读取数据"""
-        buffer = b""
-        while self.process and self.process.poll() is None:
-            try:
-                buffer += self.process.stdout.read(2048)
-                try:
-                    data = buffer.decode('utf-8')
-                    self.write_output(data)
-                    buffer = b""
-                except:
-                    pass
-            except:
-                break
-        # 进程已结束
+        if not self.process:
+            return
+        self._read_stream(self.process.stdout, False)
         if self.process:
             try:
-                # 读取剩余的输出
-                buffer += self.process.stdout.read()
-                data = buffer.decode('utf-8')
-                self.write_output(data)
-            except:
-                pass
-            return_code = self.process.poll()
-            self.write_output(f"\n[Process ended, return code: {return_code}]\n")
+                return_code = self.process.wait()
+            except Exception:
+                return_code = self.process.poll()
+            self.write_output(f"\n[Process ended, return code: {return_code}]\n", "SUCCESS")
 
     def _read_stderr(self):
         """从进程的标准错误读取数据"""
-        buffer = b""
-        while self.process and self.process.poll() is None:
-            try:
-                buffer += self.process.stderr.read(2048)
-                try:
-                    data = buffer.decode('utf-8')
-                    self.write_output(data, True)
-                    buffer = b""
-                except:
-                    pass
-            except:
-                break
-        # 进程已结束
-        if self.process:
-            try:
-                # 读取剩余的输出
-                buffer += self.process.stderr.read()
-                data = buffer.decode('utf-8')
-                self.write_output(data, True)
-            except:
-                pass
+        if not self.process:
+            return
+        self._read_stream(self.process.stderr, "ERROR")
 
     def _write_stdin(self):
         """向进程的标准输入写入数据"""
@@ -152,7 +147,7 @@ class ProcessManager:
                     self.process.stdin.flush()
             except queue.Empty:
                 continue
-            except:
+            except Exception:
                 break
 
 
@@ -187,13 +182,16 @@ def init_shell_window():
     global window, textbox, entry
     window = Toplevel()
     window.title("MIDLE Shell")
-    window.geometry("700x700")
+    width = int(700*factor)
+    height = int(700*factor)
+    window.geometry(f"{width}x{height}")
     window.iconbitmap("logo.ico")
     window.withdraw()
     window.protocol("WM_DELETE_WINDOW", close_window)
     window.bind("<Control-z>", close_process)
 
     ui = BasicTinUI(window)
+    ui.set_scale(factor)
     ui.pack(fill="both", expand=True)
     uitheme = TinUILight(ui)
 
@@ -207,6 +205,9 @@ def init_shell_window():
     textbox = textboxs[0]
     textbox.config(wrap='none', state='disabled')
     textbox.tag_config('ERROR', foreground='red')
+    textbox.tag_config('INFO', foreground='#4A90E2')
+    textbox.tag_config('SUCCESS', foreground='#2ECC71')
+    textbox.tag_config('WARNING', foreground='#F39C12')
     vpanel.add_child(epanel, weight=1)
 
     hpanel = HorizonPanel(ui, spacing=5, padding=(0,8,0,3))

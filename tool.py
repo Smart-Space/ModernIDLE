@@ -2,7 +2,7 @@ import re
 
 from tinui import ExpandPanel, HorizonPanel, VerticalPanel
 
-vpanel: VerticalPanel|None = None
+vpanel: VerticalPanel
 def init_ui(_vpanel: VerticalPanel, _ui):
     global vpanel, ui
     vpanel = _vpanel
