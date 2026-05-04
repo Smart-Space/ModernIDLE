@@ -1,4 +1,4 @@
-from tkinter import Toplevel
+from tkinter import Toplevel, Text
 import sys
 if sys.platform == "win32":
     import ctypes
@@ -12,7 +12,7 @@ import threading
 import os
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
-from tinui import BasicTinUI, ExpandPanel, VerticalPanel, HorizonPanel
+from tinui import BasicTinUI, ExpandPanel, VerticalPanel
 from tinui.theme.tinuilight import TinUILight
 
 
@@ -36,13 +36,14 @@ class ProcessManager:
 
     def write_output(self, text, TAG=None):
         """在输出区域显示文本"""
-        self.output_area.configure(state='normal')
         if TAG:
             self.output_area.insert('end', text, TAG)
         else:
             self.output_area.insert('end', text)
-        self.output_area.configure(state='disabled')
         self.output_area.see('end')
+        self.output_area.mark_set('input_start', 'insert')
+        self.output_area.mark_set('insert', 'input_start')
+        self.output_area.see('insert')
 
     def start_process(self):
         """启动子进程"""
@@ -70,7 +71,7 @@ class ProcessManager:
             self.stdin_thread = threading.Thread(target=self._write_stdin)
             self.stdin_thread.daemon = True
             self.stdin_thread.start()
-            self.write_output(f"[Process started: {self.filename}]\n\n", 'INFO')
+            self.write_output(f"[Process started: {self.filename}]\n", 'INFO')
         except Exception as e:
             self.write_output(f"Error starting process: {e}\n", "ERROR")
 
@@ -127,7 +128,7 @@ class ProcessManager:
                 return_code = self.process.wait()
             except Exception:
                 return_code = self.process.poll()
-            self.write_output(f"\n[Process ended, return code: {return_code}]\n", "SUCCESS")
+            self.write_output(f"[Process ended, return code: {return_code}]\n\n", "SUCCESS")
 
     def _read_stderr(self):
         """从进程的标准错误读取数据"""
@@ -142,7 +143,6 @@ class ProcessManager:
                 # 从队列获取输入
                 input_data = self.input_queue.get(timeout=0.1)
                 if input_data:
-                    self.write_output(input_data + '\n')
                     self.process.stdin.write(input_data.encode('utf-8'))
                     self.process.stdin.flush()
             except queue.Empty:
@@ -154,22 +154,18 @@ class ProcessManager:
 process: ProcessManager = None
 
 
+window_close = False
 def close_window():
+    global window_close
+    window_close = True
     if process.check_process():
         process.stop_process()
-    textbox.config(state='normal')
     textbox.delete('1.0', 'end')
-    textbox.config(state='disabled')
-    entry.delete(0, 'end')
     window.withdraw()
 
 def close_process(event):
     if process.check_process():
         process.stop_process()
-
-def write_input(event):
-    process._on_input_entered(entry.get())
-    entry.delete(0, 'end')
 
 def run_script(filename, debug):
     global process
@@ -178,8 +174,42 @@ def run_script(filename, debug):
     process = ProcessManager(textbox, filename, debug)
     process.start_process()
 
+
+def _proxy(*args):
+    args_list = list(args)
+    if args[0] == 'insert':
+        if textbox.compare('insert', '<', 'input_start'):
+            textbox.mark_set('insert', 'end')
+            return
+    elif args[0] == 'delete' and not window_close:
+        if textbox.compare(args[1], '<', 'input_start'):
+            if len(args_list) == 2:
+                # 尝试删除单个字符
+                return
+            else:
+                args_list[1] = 'input_start'
+    result = textbox.tk.call((text_original_widget,)+tuple(args_list))
+    return result
+
+def _check_cursor_position(event=None):
+    # 确保光标不越界
+    if textbox.compare('insert', '<', 'input_start'):
+        textbox.mark_set('insert', 'input_start')
+    return None
+
+def _run_command(event=None):
+    command = textbox.get('input_start', 'end-1c')
+    if not command.strip():
+        return "break"
+    process._on_input_entered(command)
+    textbox.mark_set('input_start', 'insert')
+    textbox.mark_set('insert', 'input_start')
+    textbox.see('insert')
+
+textbox:Text
+text_original_widget:str
 def init_shell_window():
-    global window, textbox, entry
+    global window, textbox, entry, text_original_widget
     window = Toplevel()
     window.title("MIDLE Shell")
     width = int(700*factor)
@@ -203,30 +233,41 @@ def init_shell_window():
     textboxs = uitheme.add_textbox((0,0), font='Consolas 12', scrollbar=True)
     epanel.set_child(textboxs[-1])
     textbox = textboxs[0]
-    textbox.config(wrap='none', state='disabled')
+    textbox.mark_set('input_start', 'insert')
+    textbox.mark_gravity('input_start', 'left')
+    # 拦截insert/delete操作
+    text_original_widget = f"{textbox._w}_original"
+    textbox.tk.call("rename", textbox._w, text_original_widget)
+    textbox.tk.createcommand(textbox._w, _proxy)
+    textbox.bind('<Return>', _run_command)
+    textbox.bind('<Key>', _check_cursor_position)
+    
+    textbox.config(wrap='none')
     textbox.tag_config('ERROR', foreground='red')
     textbox.tag_config('INFO', foreground='#4A90E2')
     textbox.tag_config('SUCCESS', foreground='#2ECC71')
     textbox.tag_config('WARNING', foreground='#F39C12')
     vpanel.add_child(epanel, weight=1)
 
-    hpanel = HorizonPanel(ui, spacing=5, padding=(0,8,0,3))
-    prompt = uitheme.add_paragraph((0,0), text='>>>', font='Consolas 12', anchor='w')
-    hpanel.add_child(prompt)
-    entrys = uitheme.add_entry((0,0), width=100, anchor='w')
-    entry = entrys[0]
-    entry.bind('<Return>', write_input)
-    epanel2 = ExpandPanel(ui)
-    epanel2.set_child(entrys[-1])
-    hpanel.add_child(epanel2, weight=1)
-    vpanel.add_child(hpanel, 40)
+    # hpanel = HorizonPanel(ui, spacing=5, padding=(0,8,0,3))
+    # prompt = uitheme.add_paragraph((0,0), text='>>>', font='Consolas 12', anchor='w')
+    # hpanel.add_child(prompt)
+    # entrys = uitheme.add_entry((0,0), width=100, anchor='w')
+    # entry = entrys[0]
+    # entry.bind('<Return>', write_input)
+    # epanel2 = ExpandPanel(ui)
+    # epanel2.set_child(entrys[-1])
+    # hpanel.add_child(epanel2, weight=1)
+    # vpanel.add_child(hpanel, 40)
 
     def on_resize(event):
         rpanel.update_layout(0, 0, event.width, event.height)
     ui.bind("<Configure>", on_resize)
 
 def show_shell_window(filename, debug=False):
+    global window_close
     window.title(f"MIDLE Shell - {filename}")
     window.deiconify()
-    entry.focus_set()
+    textbox.focus_set()
+    window_close = False
     run_script(filename, debug)
