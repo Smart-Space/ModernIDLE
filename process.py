@@ -176,6 +176,7 @@ def run_script(filename, debug):
 
 
 def _proxy(*args):
+    # 接管insert/delete操作
     args_list = list(args)
     if args[0] == 'insert':
         if textbox.compare('insert', '<', 'input_start'):
@@ -237,8 +238,8 @@ def init_shell_window():
     textbox.mark_gravity('input_start', 'left')
     # 拦截insert/delete操作
     text_original_widget = f"{textbox._w}_original"
-    textbox.tk.call("rename", textbox._w, text_original_widget)
-    textbox.tk.createcommand(textbox._w, _proxy)
+    textbox.tk.call("rename", textbox._w, text_original_widget) # 保留原命令
+    textbox.tk.createcommand(textbox._w, _proxy) # 重命名功能
     textbox.bind('<Return>', _run_command)
     textbox.bind('<Key>', _check_cursor_position)
     
@@ -248,17 +249,6 @@ def init_shell_window():
     textbox.tag_config('SUCCESS', foreground='#2ECC71')
     textbox.tag_config('WARNING', foreground='#F39C12')
     vpanel.add_child(epanel, weight=1)
-
-    # hpanel = HorizonPanel(ui, spacing=5, padding=(0,8,0,3))
-    # prompt = uitheme.add_paragraph((0,0), text='>>>', font='Consolas 12', anchor='w')
-    # hpanel.add_child(prompt)
-    # entrys = uitheme.add_entry((0,0), width=100, anchor='w')
-    # entry = entrys[0]
-    # entry.bind('<Return>', write_input)
-    # epanel2 = ExpandPanel(ui)
-    # epanel2.set_child(entrys[-1])
-    # hpanel.add_child(epanel2, weight=1)
-    # vpanel.add_child(hpanel, 40)
 
     def on_resize(event):
         rpanel.update_layout(0, 0, event.width, event.height)
