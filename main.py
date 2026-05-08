@@ -258,7 +258,7 @@ accentbutton = uitheme.add_accentbutton(
 toolpanel.add_child(accentbutton)
 
 textboxs = uitheme.add_textbox((0, 0), font="Consolas 12", scrollbar=True)
-textpanel = ExpandPanel(ui, textboxs[-1], (0, 3, 3, 0))
+textpanel = ExpandPanel(ui, textboxs[-1], (0, 0, 0, 0))
 vpanel.add_child(textpanel, weight=1)
 textbox:Text = textboxs[0]
 ui.__setattr__('textbox', textbox)
