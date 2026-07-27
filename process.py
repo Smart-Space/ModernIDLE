@@ -230,7 +230,7 @@ def init_shell_window():
     vpanel = VerticalPanel(ui,spacing=5)
     rpanel.set_child(vpanel)
 
-    epanel = ExpandPanel(ui, padding=(0,3,3,0))
+    epanel = ExpandPanel(ui, padding=(0,3,3,1))
     textboxs = uitheme.add_textbox((0,0), font='Consolas 12', scrollbar=True)
     epanel.set_child(textboxs[-1])
     textbox = textboxs[0]
